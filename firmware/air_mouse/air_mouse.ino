@@ -1,5 +1,5 @@
 // ESP32 Air Mouse
-// MPU6050 gyro -> BLE HID mouse, 2 buttons, live tuning over USB serial.
+// MPU6050 gyro -> BLE HID mouse, 2 buttons.
 // Board: classic ESP32 DevKit, esp32 core 3.2.0
 // Libraries: ESP32-BLE-Mouse by T-vK (patched, see README)
 
@@ -14,7 +14,7 @@
 #define BTN_RIGHT 18
 #define MPU_ADDR  0x68
 
-// ---- CONFIG (paste from the tuner) ----
+// ---- CONFIG ----
 int   X_AXIS   = 2;     // 0=gx 1=gy 2=gz
 int   X_SIGN   = -1;
 int   Y_AXIS   = 0;
@@ -75,7 +75,7 @@ void printCfg() {
   Serial.printf("CFG,%d,%d,%d,%d,%.3f,%.2f,%.3f\n", X_AXIS, X_SIGN, Y_AXIS, Y_SIGN, SENS, DEADZONE, SMOOTH);
 }
 
-// Serial commands from the tuner:
+// Serial commands (optional, over USB at 115200):
 //   C,xa,xs,ya,ys,sens,dead,smooth   set config
 //   S1 / S0                          start / stop gyro stream
 //   K                                recalibrate
@@ -116,7 +116,7 @@ void setup() {
   Wire.begin(SDA_PIN, SCL_PIN);
   Wire.beginTransmission(MPU_ADDR);
   Serial.println(Wire.endTransmission() == 0 ? "MPU found at 0x68" : "MPU NOT FOUND");
-  mpuWrite(0x6B, 0x40);  // asleep until BLE connects or tuner asks
+  mpuWrite(0x6B, 0x40);  // asleep until BLE connects or S1 is sent over serial
 
   bleMouse.begin();
   Serial.println("Advertising as AirMouse2");

@@ -2,10 +2,6 @@
 
 Wave your hand, move the cursor. An ESP32, an MPU6050 gyro and two buttons, acting as a Bluetooth mouse. No receiver, no app on the computer. It pairs like any normal BT mouse.
 
-Comes with a browser tuner that shows the gyro live and lets you set axes, speed, deadzone and smoothing while the real cursor responds.
-
-**Tuner:** https://ayhansh.github.io/esp32-air-mouse/tuner/
-
 ## Parts
 
 - ESP32 DevKit (classic ESP32, 30-pin)
@@ -47,11 +43,13 @@ Keep the board still for a few seconds after connecting. It calibrates the gyro.
 
 ## Tuning
 
-1. Plug the ESP32 in over USB. **Close the Arduino Serial Monitor**, only one app can hold the port.
-2. Open the [tuner](https://ayhansh.github.io/esp32-air-mouse/tuner/) in Chrome or Edge (Safari has no Web Serial).
-3. Connect, then hit **Auto-detect axes**. It asks you to push right, then up, and maps the axes for however your board is mounted.
-4. Drag the sliders. Changes go to the board live.
-5. **Copy config** and paste it over the config block at the top of the sketch. Re-upload to make it stick.
+Edit the config block at the top of the sketch and re-upload:
+
+- `X_AXIS` / `Y_AXIS`: which gyro axis drives the cursor (0 = X, 1 = Y, 2 = Z). Change these if the board is mounted differently.
+- `X_SIGN` / `Y_SIGN`: set to `1` or `-1` to flip a direction.
+- `SENS`: cursor speed. Higher is faster.
+- `DEADZONE`: rotation below this (°/s) is ignored. Raise it if the cursor creeps.
+- `SMOOTH`: 0 to 0.95. Reduces hand jitter, too high feels laggy.
 
 ## Troubleshooting
 
