@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Air Mouse Tuner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #E4E6E1; --panel: #F3F4F0; --ink: #1C2226; --muted: #5E676C; --line: #C8CCC4;
+  --x: #D64330; --y: #2B9A54; --z: #2F63D6; --pad: #1C2226; --padline: #2E363B; --padink: #E9ECE6;
+  --ok: #2B9A54; --warn: #C27A12;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15181A; --panel: #1E2225; --ink: #E6E9E4; --muted: #8E979B; --line: #33393D;
+    --x: #F0654F; --y: #4CC37A; --z: #6A93F2; --pad: #0F1213; --padline: #262C30; --padink: #E6E9E4;
+    --ok: #4CC37A; --warn: #E0A040;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15181A; --panel: #1E2225; --ink: #E6E9E4; --muted: #8E979B; --line: #33393D;
+  --x: #F0654F; --y: #4CC37A; --z: #6A93F2; --pad: #0F1213; --padline: #262C30; --padink: #E6E9E4;
+  --ok: #4CC37A; --warn: #E0A040;
+  color-scheme: dark;
+}
+:root { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+*, *::before, *::after { box-sizing: inherit; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: "Archivo", "Helvetica Neue", Arial, sans-serif; font-size: 15px; line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+.wrap { max-width: 1180px; margin: 0 auto; padding: 28px 20px 48px; }
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+h1 { font-stretch: 72%; font-weight: 800; font-size: clamp(34px, 5vw, 56px); line-height: .95; margin: 0; letter-spacing: -.01em; }
+.sub { color: var(--muted); margin: 8px 0 0; max-width: 52ch; }
+.conn { display: flex; align-items: center; gap: 12px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--line); flex: none; }
+.dot.on { background: var(--ok); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 25%, transparent); }
+.dot.wait { background: var(--warn); }
+#status { color: var(--muted); font-size: 14px; }
+
+.grid { display: grid; grid-template-columns: 360px 1fr; gap: 20px; align-items: start; }
+@media (max-width: 880px) { .grid { grid-template-columns: 1fr; } }
+
+.col { display: flex; flex-direction: column; gap: 14px; }
+section.box { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; }
+h2 { font-stretch: 85%; font-weight: 700; font-size: 17px; margin: 0 0 12px; }
+.hint { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+
+button {
+  font: inherit; font-weight: 600; font-size: 14px; cursor: pointer;
+  border: 1px solid var(--ink); background: var(--ink); color: var(--panel);
+  border-radius: 4px; padding: 9px 14px;
+}
+button.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+button.ghost:hover { border-color: var(--ink); }
+button:disabled { opacity: .4; cursor: not-allowed; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--z); outline-offset: 2px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+.map { display: grid; grid-template-columns: 70px 1fr auto; gap: 10px; align-items: center; margin-bottom: 10px; }
+.map .lbl { font-weight: 700; font-stretch: 85%; }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; background: transparent; color: var(--muted); padding: 7px 0; font-size: 13px; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button.sel { color: #fff; }
+.seg button.sel[data-a="0"] { background: var(--x); }
+.seg button.sel[data-a="1"] { background: var(--y); }
+.seg button.sel[data-a="2"] { background: var(--z); }
+.inv { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); cursor: pointer; user-select: none; }
+.inv input { accent-color: var(--ink); width: 16px; height: 16px; }
+
+.slider { margin-bottom: 14px; }
+.slider:last-child { margin-bottom: 0; }
+.slider .top { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px; }
+.slider .top b { font-weight: 700; }
+.slider input[type=range] { width: 100%; accent-color: var(--ink); }
+.slider small { color: var(--muted); font-size: 12px; }
+
+.stage { display: flex; flex-direction: column; gap: 14px; }
+.pad {
+  position: relative; background: var(--pad); border-radius: 6px; overflow: hidden;
+  aspect-ratio: 16 / 10; width: 100%;
+}
+.pad canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pad .overlay {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; color: var(--padink); padding: 24px; gap: 10px;
+}
+.pad .overlay p { margin: 0; max-width: 40ch; opacity: .75; }
+.pad .overlay strong { font-stretch: 75%; font-size: clamp(22px, 3vw, 32px); font-weight: 800; }
+.pad .corner { position: absolute; left: 14px; bottom: 12px; color: var(--padink); opacity: .6; font-size: 12px; }
+.pad .corner2 { position: absolute; right: 12px; top: 10px; }
+.pad .corner2 button { background: transparent; color: var(--padink); border-color: var(--padline); font-size: 12px; padding: 5px 10px; }
+
+.scope { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px 10px; }
+.scope canvas { width: 100%; height: 150px; display: block; }
+.readout { display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; margin-top: 6px; }
+.readout span { display: inline-flex; align-items: center; gap: 6px; }
+.readout i { width: 10px; height: 3px; display: inline-block; border-radius: 2px; }
+.readout b { min-width: 6ch; display: inline-block; text-align: right; font-weight: 600; }
+
+.wiz { display: none; margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+.wiz.on { display: block; }
+.wiz .say { font-stretch: 85%; font-weight: 700; font-size: 20px; line-height: 1.15; margin: 0 0 8px; }
+.bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.bar > div { height: 100%; width: 0; background: var(--ink); }
+.result { font-size: 13px; color: var(--muted); margin-top: 8px; }
+
+pre {
+  margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 4px;
+  padding: 12px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px;
+  overflow-x: auto; line-height: 1.5;
+}
+.copied { color: var(--ok); font-size: 13px; opacity: 0; transition: opacity .2s; }
+.copied.show { opacity: 1; }
+.err { color: var(--x); font-size: 13px; margin-top: 8px; }
+@media (prefers-reduced-motion: reduce) { .copied { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Air Mouse Tuner</h1>
+      <p class="sub">Plug the ESP32 in over USB, connect, and tune the gyro live. Every change goes straight to the board, so the real cursor on your Mac updates too.</p>
+    </div>
+    <div class="conn">
+      <span class="dot" id="dot"></span>
+      <span id="status">Not connected</span>
+      <button id="connectBtn">Connect ESP32</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <section class="box">
+        <h2>Axis mapping</h2>
+        <p class="hint">Which gyro axis drives the cursor. Use auto-detect if you rotated the board.</p>
+        <div class="map">
+          <span class="lbl">Cursor X</span>
+          <div class="seg" id="segX">
+            <button data-a="0">Gyro X</button><button data-a="1">Gyro Y</button><button data-a="2">Gyro Z</button>
+          </div>
+          <label class="inv"><input type="checkbox" id="invX">Invert</label>
+        </div>
+        <div class="map">
+          <span class="lbl">Cursor Y</span>
+          <div class="seg" id="segY">
+            <button data-a="0">Gyro X</button><button data-a="1">Gyro Y</button><button data-a="2">Gyro Z</button>
+          </div>
+          <label class="inv"><input type="checkbox" id="invY">Invert</label>
+        </div>
+        <div class="row">
+          <button id="wizBtn" disabled>Auto-detect axes</button>
+          <button class="ghost" id="rotBtn">Rotate 90°</button>
+          <button class="ghost" id="swapBtn">Swap X/Y</button>
+        </div>
+        <div class="wiz" id="wiz">
+          <p class="say" id="wizSay">Hold still</p>
+          <div class="bar"><div id="wizBar"></div></div>
+          <p class="result" id="wizResult"></p>
+        </div>
+      </section>
+
+      <section class="box">
+        <h2>Feel</h2>
+        <div class="slider">
+          <div class="top"><span>Sensitivity</span><b id="vSens">0.35</b></div>
+          <input type="range" id="sens" min="0.05" max="1.5" step="0.01" value="0.35">
+          <small>Cursor speed. Higher is faster.</small>
+        </div>
+        <div class="slider">
+          <div class="top"><span>Deadzone</span><b id="vDead">2.5°/s</b></div>
+          <input type="range" id="dead" min="0" max="15" step="0.1" value="2.5">
+          <small>Rotation below this is ignored. Raise it if the cursor creeps.</small>
+        </div>
+        <div class="slider">
+          <div class="top"><span>Smoothing</span><b id="vSmooth">0.00</b></div>
+          <input type="range" id="smooth" min="0" max="0.9" step="0.01" value="0">
+          <small>Kills hand jitter. Too high feels laggy.</small>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <button class="ghost" id="calBtn" disabled>Recalibrate gyro</button>
+        </div>
+      </section>
+
+      <section class="box">
+        <h2>Your config</h2>
+        <p class="hint">Paste this into the chat, or over the config block at the top of the sketch.</p>
+        <pre id="out"></pre>
+        <div class="row" style="margin-top:10px">
+          <button id="copyBtn">Copy config</button>
+          <span class="copied" id="copied">Copied</span>
+        </div>
+      </section>
+    </div>
+
+    <div class="stage">
+      <div class="pad" id="pad">
+        <canvas id="padCanvas"></canvas>
+        <div class="overlay" id="overlay">
+          <strong>Connect the ESP32 to start</strong>
+          <p id="overlayMsg">Close the Arduino Serial Monitor first. Only one app can use the USB port at a time.</p>
+        </div>
+        <span class="corner">Cursor preview, same math as the firmware</span>
+        <span class="corner2"><button id="centerBtn">Center</button></span>
+      </div>
+      <div class="scope">
+        <canvas id="scopeCanvas"></canvas>
+        <div class="readout">
+          <span><i style="background:var(--x)"></i>Gyro X <b id="rx">0.0</b></span>
+          <span><i style="background:var(--y)"></i>Gyro Y <b id="ry">0.0</b></span>
+          <span><i style="background:var(--z)"></i>Gyro Z <b id="rz">0.0</b></span>
+          <span style="color:var(--muted)">°/s</span>
+        </div>
+      </div>
+      <div id="errBox" class="err"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const cfg = { xa: 2, xs: -1, ya: 0, ys: -1, sens: 0.35, dead: 2.5, smooth: 0 };
+  let port = null, reader = null, connected = false, gotCfg = false;
+  let lastSample = 0, lastS1 = 0;
+  const hist = []; const HMAX = 300;
+  const cur = { x: 0.5, y: 0.5, ax: 0, ay: 0, sx: 0, sy: 0, trail: [] };
+
+  // ---------- UI state ----------
+  function renderMapping() {
+    for (const [seg, a] of [["segX", cfg.xa], ["segY", cfg.ya]])
+      $(seg).querySelectorAll("button").forEach(b => b.classList.toggle("sel", +b.dataset.a === a));
+    $("invX").checked = cfg.xs < 0;
+    $("invY").checked = cfg.ys < 0;
+    $("sens").value = cfg.sens; $("dead").value = cfg.dead; $("smooth").value = cfg.smooth;
+    $("vSens").textContent = cfg.sens.toFixed(2);
+    $("vDead").textContent = cfg.dead.toFixed(1) + "°/s";
+    $("vSmooth").textContent = cfg.smooth.toFixed(2);
+    $("out").textContent =
+`int   X_AXIS   = ${cfg.xa};     // 0=gx 1=gy 2=gz
+int   X_SIGN   = ${cfg.xs};
+int   Y_AXIS   = ${cfg.ya};
+int   Y_SIGN   = ${cfg.ys};
+float SENS     = ${cfg.sens.toFixed(2)};
+float DEADZONE = ${cfg.dead.toFixed(1)};
+float SMOOTH   = ${cfg.smooth.toFixed(2)};`;
+  }
+  function changed() { renderMapping(); queueSend(); }
+
+  $("segX").addEventListener("click", e => { const a = e.target.dataset.a; if (a === undefined) return; cfg.xa = +a; if (cfg.ya === cfg.xa) cfg.ya = [0,1,2].find(v => v !== cfg.xa); changed(); });
+  $("segY").addEventListener("click", e => { const a = e.target.dataset.a; if (a === undefined) return; cfg.ya = +a; if (cfg.xa === cfg.ya) cfg.xa = [0,1,2].find(v => v !== cfg.ya); changed(); });
+  $("invX").addEventListener("change", e => { cfg.xs = e.target.checked ? -1 : 1; changed(); });
+  $("invY").addEventListener("change", e => { cfg.ys = e.target.checked ? -1 : 1; changed(); });
+  $("sens").addEventListener("input", e => { cfg.sens = +e.target.value; changed(); });
+  $("dead").addEventListener("input", e => { cfg.dead = +e.target.value; changed(); });
+  $("smooth").addEventListener("input", e => { cfg.smooth = +e.target.value; changed(); });
+  $("rotBtn").addEventListener("click", () => {
+    const { xa, xs, ya, ys } = cfg;
+    cfg.xa = ya; cfg.xs = ys; cfg.ya = xa; cfg.ys = -xs; changed();
+  });
+  $("swapBtn").addEventListener("click", () => {
+    const { xa, xs, ya, ys } = cfg;
+    cfg.xa = ya; cfg.xs = xs; cfg.ya = xa; cfg.ys = ys; changed();
+  });
+  $("centerBtn").addEventListener("click", () => { cur.x = cur.y = 0.5; cur.trail = []; });
+  $("calBtn").addEventListener("click", () => { send("K"); setStatus("Recalibrating, keep it still", "wait"); });
+  $("copyBtn").addEventListener("click", async () => {
+    const txt = $("out").textContent;
+    try { await navigator.clipboard.writeText(txt); }
+    catch { const r = document.createRange(); r.selectNodeContents($("out")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand("copy"); s.removeAllRanges(); }
+    $("copied").classList.add("show"); setTimeout(() => $("copied").classList.remove("show"), 1400);
+  });
+
+  function setStatus(t, s) { $("status").textContent = t; $("dot").className = "dot" + (s ? " " + s : ""); }
+  function showErr(t) { $("errBox").textContent = t || ""; }
+
+  // ---------- Serial ----------
+  let sendTimer = null;
+  function queueSend() { clearTimeout(sendTimer); sendTimer = setTimeout(sendCfg, 120); }
+  function sendCfg() { send(`C,${cfg.xa},${cfg.xs},${cfg.ya},${cfg.ys},${cfg.sens.toFixed(3)},${cfg.dead.toFixed(2)},${cfg.smooth.toFixed(3)}`); }
+  async function send(line) {
+    if (!port || !port.writable) return;
+    const w = port.writable.getWriter();
+    try { await w.write(new TextEncoder().encode(line + "\n")); } catch {} finally { w.releaseLock(); }
+  }
+
+  $("connectBtn").addEventListener("click", async () => {
+    if (connected) { disconnect(); return; }
+    showErr("");
+    if (!("serial" in navigator)) { showErr("This browser can't talk to USB serial. Open this page in Chrome or Edge on your Mac."); return; }
+    try {
+      port = await navigator.serial.requestPort();
+      await port.open({ baudRate: 115200 });
+      try { await port.setSignals({ dataTerminalReady: false, requestToSend: false }); } catch {}
+    } catch (e) {
+      if (e.name === "NotFoundError") return;
+      if (e.name === "SecurityError") showErr("USB access is blocked here. Open this page in its own Chrome tab and try again.");
+      else if (e.name === "InvalidStateError" || /open/i.test(e.message)) showErr("The port is busy. Close the Arduino Serial Monitor, then connect again.");
+      else showErr("Couldn't open the port: " + e.message);
+      port = null; return;
+    }
+    connected = true; gotCfg = false;
+    $("connectBtn").textContent = "Disconnect";
+    $("wizBtn").disabled = false; $("calBtn").disabled = false;
+    setStatus("Connected, waiting for gyro data", "wait");
+    $("overlayMsg").textContent = "Waiting for gyro data from the board.";
+    readLoop();
+    setTimeout(() => { send("P"); send("S1"); lastS1 = performance.now(); }, 600);
+  });
+
+  async function disconnect() {
+    connected = false;
+    try { await send("S0"); } catch {}
+    try { await reader?.cancel(); } catch {}
+    try { await port?.close(); } catch {}
+    port = null;
+    $("connectBtn").textContent = "Connect ESP32";
+    $("wizBtn").disabled = true; $("calBtn").disabled = true;
+    setStatus("Not connected");
+    $("overlay").style.display = "";
+    $("overlayMsg").textContent = "Close the Arduino Serial Monitor first. Only one app can use the USB port at a time.";
+  }
+
+  async function readLoop() {
+    const dec = new TextDecoder(); let buf = "";
+    while (connected && port?.readable) {
+      reader = port.readable.getReader();
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buf += dec.decode(value, { stream: true });
+          let i;
+          while ((i = buf.indexOf("\n")) >= 0) { handleLine(buf.slice(0, i).trim()); buf = buf.slice(i + 1); }
+          if (buf.length > 2000) buf = "";
+        }
+      } catch (e) {
+        if (connected) { showErr("Lost the USB connection. Plug it back in and connect again."); disconnect(); }
+      } finally { try { reader.releaseLock(); } catch {} }
+    }
+  }
+
+  function handleLine(l) {
+    if (!l) return;
+    if (l.startsWith("G,")) {
+      const p = l.split(",");
+      if (p.length < 4) return;
+      const g = [+p[1], +p[2], +p[3]];
+      if (g.some(isNaN)) return;
+      onSample(g);
+    } else if (l.startsWith("CFG,")) {
+      const p = l.split(",").slice(1).map(Number);
+      if (p.length >= 7 && !gotCfg && !p.some(isNaN)) {
+        gotCfg = true;
+        [cfg.xa, cfg.xs, cfg.ya, cfg.ys, cfg.sens, cfg.dead, cfg.smooth] = p;
+        renderMapping();
+      }
+    } else if (/Calibration done/.test(l)) {
+      if (connected) setStatus("Live", "on");
+    } else if (/Calibrating/.test(l)) {
+      setStatus("Calibrating, keep it still", "wait");
+    } else if (/MPU NOT/.test(l)) {
+      showErr("The board says the MPU6050 isn't responding. Check SDA/SCL and power.");
+    }
+  }
+
+  // keep asking for the stream if the board reset
+  setInterval(() => {
+    if (!connected) return;
+    const now = performance.now();
+    if (now - lastSample > 1500 && now - lastS1 > 2000) { send("S1"); if (!gotCfg) send("P"); lastS1 = now; }
+  }, 500);
+
+  // ---------- Samples ----------
+  function mapped(g) {
+    let mx = Math.abs(g[cfg.xa]) > cfg.dead ? g[cfg.xa] * cfg.xs * cfg.sens : 0;
+    let my = Math.abs(g[cfg.ya]) > cfg.dead ? g[cfg.ya] * cfg.ys * cfg.sens : 0;
+    return [mx, my];
+  }
+
+  function onSample(g) {
+    lastSample = performance.now();
+    if ($("overlay").style.display !== "none") { $("overlay").style.display = "none"; setStatus("Live", "on"); }
+    hist.push(g); if (hist.length > HMAX) hist.shift();
+    $("rx").textContent = g[0].toFixed(1); $("ry").textContent = g[1].toFixed(1); $("rz").textContent = g[2].toFixed(1);
+
+    // firmware runs at 100 Hz, stream is 50 Hz, so step twice
+    for (let k = 0; k < 2; k++) {
+      const [mx, my] = mapped(g);
+      cur.sx = cur.sx * cfg.smooth + mx * (1 - cfg.smooth);
+      cur.sy = cur.sy * cfg.smooth + my * (1 - cfg.smooth);
+      cur.ax += cur.sx; cur.ay += cur.sy;
+      const dx = Math.trunc(cur.ax), dy = Math.trunc(cur.ay);
+      cur.ax -= dx; cur.ay -= dy;
+      const W = 1440, H = 900; // treat the pad like a laptop screen
+      cur.x = Math.min(1, Math.max(0, cur.x + Math.max(-127, Math.min(127, dx)) / W));
+      cur.y = Math.min(1, Math.max(0, cur.y + Math.max(-127, Math.min(127, dy)) / H));
+    }
+    cur.trail.push([cur.x, cur.y]); if (cur.trail.length > 60) cur.trail.shift();
+    wizFeed(g);
+  }
+
+  // ---------- Auto-detect wizard ----------
+  const wiz = { step: 0, t0: 0, peaks: [0,0,0], dur: 0 };
+  const STEPS = [
+    { say: "Hold it still", dur: 1200 },
+    { say: "Now move it like you're pushing the cursor RIGHT. One smooth move.", dur: 2200 },
+    { say: "Good. Hold still again", dur: 1000 },
+    { say: "Now move it like you're pushing the cursor UP. One smooth move.", dur: 2200 },
+  ];
+  let wizResultX = null;
+
+  $("wizBtn").addEventListener("click", () => {
+    if (!connected) return;
+    wiz.step = 0; wizResultX = null; startStep();
+    $("wiz").classList.add("on"); $("wizResult").textContent = "";
+    $("wizBtn").disabled = true;
+  });
+  function startStep() {
+    wiz.t0 = performance.now(); wiz.peaks = [0,0,0];
+    $("wizSay").textContent = STEPS[wiz.step].say;
+  }
+  function wizFeed(g) {
+    if (!$("wiz").classList.contains("on") || $("wizBtn").disabled === false) return;
+    const s = STEPS[wiz.step]; const el = performance.now() - wiz.t0;
+    $("wizBar").style.width = Math.min(100, el / s.dur * 100) + "%";
+    if (wiz.step === 1 || wiz.step === 3) {
+      for (let i = 0; i < 3; i++) if (Math.abs(g[i]) > Math.abs(wiz.peaks[i])) wiz.peaks[i] = g[i];
+    }
+    if (el < s.dur) return;
+    if (wiz.step === 1) {
+      const a = argmaxAbs(wiz.peaks, -1);
+      if (Math.abs(wiz.peaks[a]) < 15) return failWiz("Didn't see enough movement. Try again with a bigger move.");
+      wizResultX = { a, s: Math.sign(wiz.peaks[a]) };
+    }
+    if (wiz.step === 3) {
+      const a = argmaxAbs(wiz.peaks, wizResultX.a);
+      if (Math.abs(wiz.peaks[a]) < 15) return failWiz("Didn't see enough movement for UP. Try again with a bigger move.");
+      cfg.xa = wizResultX.a; cfg.xs = wizResultX.s;
+      cfg.ya = a; cfg.ys = -Math.sign(wiz.peaks[a]); // screen up is negative Y
+      changed();
+      const n = ["Gyro X", "Gyro Y", "Gyro Z"];
+      $("wizSay").textContent = "Mapped";
+      $("wizResult").textContent = `Right uses ${n[cfg.xa]}${cfg.xs < 0 ? " inverted" : ""}. Up uses ${n[cfg.ya]}${cfg.ys < 0 ? " inverted" : ""}. Test it on the preview.`;
+      $("wizBtn").disabled = false; return;
+    }
+    wiz.step++; startStep();
+  }
+  function argmaxAbs(arr, skip) {
+    let best = -1;
+    for (let i = 0; i < 3; i++) if (i !== skip && (best < 0 || Math.abs(arr[i]) > Math.abs(arr[best]))) best = i;
+    return best;
+  }
+  function failWiz(msg) { $("wizSay").textContent = "Try again"; $("wizResult").textContent = msg; $("wizBtn").disabled = false; }
+
+  // ---------- Drawing ----------
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  function fit(c) {
+    const r = c.getBoundingClientRect(), d = devicePixelRatio || 1;
+    const w = Math.round(r.width * d), h = Math.round(r.height * d);
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    return [w, h, d];
+  }
+  function draw() {
+    const pc = $("padCanvas"), px = pc.getContext("2d");
+    const [w, h, d] = fit(pc);
+    px.clearRect(0, 0, w, h);
+    px.strokeStyle = css("--padline"); px.lineWidth = 1 * d;
+    for (let i = 1; i < 8; i++) { const x = Math.round(w * i / 8) + .5; px.beginPath(); px.moveTo(x, 0); px.lineTo(x, h); px.stroke(); }
+    for (let i = 1; i < 5; i++) { const y = Math.round(h * i / 5) + .5; px.beginPath(); px.moveTo(0, y); px.lineTo(w, y); px.stroke(); }
+    const ink = css("--padink");
+    if (cur.trail.length > 1) {
+      px.lineCap = "round"; px.lineJoin = "round";
+      for (let i = 1; i < cur.trail.length; i++) {
+        px.globalAlpha = i / cur.trail.length * .6;
+        px.strokeStyle = ink; px.lineWidth = 2 * d;
+        px.beginPath(); px.moveTo(cur.trail[i-1][0] * w, cur.trail[i-1][1] * h); px.lineTo(cur.trail[i][0] * w, cur.trail[i][1] * h); px.stroke();
+      }
+      px.globalAlpha = 1;
+    }
+    // arrow cursor
+    const cx = cur.x * w, cy = cur.y * h, s = 22 * d;
+    px.beginPath();
+    px.moveTo(cx, cy); px.lineTo(cx, cy + s); px.lineTo(cx + s * .28, cy + s * .75);
+    px.lineTo(cx + s * .48, cy + s * 1.1); px.lineTo(cx + s * .6, cy + s * 1.04);
+    px.lineTo(cx + s * .42, cy + s * .7); px.lineTo(cx + s * .72, cy + s * .7); px.closePath();
+    px.fillStyle = ink; px.fill(); px.strokeStyle = css("--pad"); px.lineWidth = 1.5 * d; px.stroke();
+
+    const sc = $("scopeCanvas"), sx = sc.getContext("2d");
+    const [W, H] = fit(sc);
+    sx.clearRect(0, 0, W, H);
+    sx.strokeStyle = css("--line"); sx.lineWidth = 1 * d;
+    sx.beginPath(); sx.moveTo(0, H / 2 + .5); sx.lineTo(W, H / 2 + .5); sx.stroke();
+    // deadzone band
+    const range = 250;
+    const dz = cfg.dead / range * (H / 2);
+    sx.fillStyle = css("--line"); sx.globalAlpha = .45; sx.fillRect(0, H / 2 - dz, W, dz * 2); sx.globalAlpha = 1;
+    const cols = [css("--x"), css("--y"), css("--z")];
+    for (let a = 0; a < 3; a++) {
+      const used = a === cfg.xa || a === cfg.ya;
+      sx.strokeStyle = cols[a]; sx.lineWidth = (used ? 2.2 : 1.2) * d; sx.globalAlpha = used ? 1 : .45;
+      sx.beginPath();
+      for (let i = 0; i < hist.length; i++) {
+        const x = W - (hist.length - 1 - i) / (HMAX - 1) * W;
+        const y = H / 2 - Math.max(-range, Math.min(range, hist[i][a])) / range * (H / 2);
+        i ? sx.lineTo(x, y) : sx.moveTo(x, y);
+      }
+      sx.stroke();
+    }
+    sx.globalAlpha = 1;
+    requestAnimationFrame(draw);
+  }
+
+  renderMapping();
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>
